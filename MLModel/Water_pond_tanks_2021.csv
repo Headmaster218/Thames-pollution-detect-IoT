@@ -1,6 +1,4 @@
-"Temperature
-?C (Min)","Temperature
-?C (Max)",Dissolved Oxygen (mg/L) (Min),Dissolved Oxygen (mg/L) (Max),pH (Min),pH (Max),Conductivity (?mhos/cm) (Min),Conductivity (?mhos/cm) (Max),BOD (mg/L) (Min),BOD (mg/L) (Max),Fecal Coliform (MPN/100ml) (Min),Fecal Coliform (MPN/100ml) (Max),Total Coliform (MPN/100ml) (Min),Total Coliform (MPN/100ml) (Max)
+"Temperature?C (Min)","Temperature(Max)",Dissolved Oxygen (mg/L) (Min),Dissolved Oxygen (mg/L) (Max),pH (Min),pH (Max),Conductivity (?mhos/cm) (Min),Conductivity (?mhos/cm) (Max),BOD (mg/L) (Min),BOD (mg/L) (Max),Fecal Coliform (MPN/100ml) (Min),Fecal Coliform (MPN/100ml) (Max),Total Coliform (MPN/100ml) (Min),Total Coliform (MPN/100ml) (Max)
 24,27,3.2,6.5,7,8,245,5160,1.6,3.2,9,21,120,210
 26,29,3,6.8,6.9,7.8,599,1179,1.9,4.6,15,23,150,240
 18,24,4.2,6,7.2,8.2,28000,56900,2.4,2.8,3,3,47,150
