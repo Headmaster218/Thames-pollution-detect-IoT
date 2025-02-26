@@ -12,7 +12,7 @@ This project aims to detect pollution levels in the Thames River using IoT devic
 - **2.1extract_column.py**: Extracts all kinds of columns from the **1GB** CSV file and removes duplicates.
 - **2.2extract_specific_columns_datas.py**: Extracts rows with specific columns from the input CSV file. From **1GB** data to **250MB**.
 - **2.3rearrange_columnsl.py**: Rearranges columns in the extracted data and writes to a new CSV file. From **250MB** data to **29MB**.
-
+- **2.5fliter_data.py**: fliter the data less than 4. totally 10,000 data left. From **29MB** data to **1MB**
 
 ## Usage
 1. Download all raw data from https://environment.data.gov.uk/water-quality/view/download/new.
