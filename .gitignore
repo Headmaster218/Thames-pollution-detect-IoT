@@ -1,2 +1,14 @@
 
 MLModel/station/
+
+MLModel/1 2000-2025Coliform.csv
+
+.DS_Store
+
+MLModel/2.1extracted_columns_all_kinds.csv
+
+MLModel/2.2extracted_specific_columns.csv
+
+MLModel/2.3rearrange_columnsl.py
+
+MLModel/2.4 hand merge Cond \@ 25COxygen DissTemp Turbidity.csv

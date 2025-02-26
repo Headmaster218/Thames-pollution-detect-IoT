@@ -1,0 +1,38 @@
+
+# Thames Pollution Detection IoT - ML Model
+
+## Author
+John Wu, Tommy Xin, Flex Fan
+
+## Project Overview
+This project aims to detect pollution levels in the Thames River using IoT devices and machine learning models with inorganic sensors. The data is collected from various stations along the river and processed to identify pollution indicators such as Coliform and E.coli.
+
+## File Descriptions
+- **1find Coli.py**: Processes CSV files from 2000 to 2025 to filter and retain data related to Coliform and E.coli. From **23GB** raw data to **1GB**.
+- **2.1extract_column.py**: Extracts all kinds of columns from the **1GB** CSV file and removes duplicates.
+- **2.2extract_specific_columns_datas.py**: Extracts rows with specific columns from the input CSV file. From **1GB** data to **250MB**.
+- **2.3rearrange_columnsl.py**: Rearranges columns in the extracted data and writes to a new CSV file. From **250MB** data to **29MB**.
+
+
+## Usage
+1. Download all raw data from https://environment.data.gov.uk/water-quality/view/download/new.
+2. Run the scripts in the following order:
+   - `1find Coli.py`
+   - `2.1extract_column.py`
+   - `2.2extract_specific_columns_datas.py`
+   - `2.3rearrange_columnsl.py`
+   - `2.4filter_rows_over_2_datas.py`
+3. The final processed data will be saved in the respective output files.
+
+## Requirements
+- Python 3.x
+- pandas
+- multiprocessing
+
+Install the required packages using:
+```bash
+pip install pandas
+```
+
+## License
+This project is licensed under the MIT License.
