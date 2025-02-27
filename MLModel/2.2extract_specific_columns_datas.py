@@ -7,12 +7,12 @@ columns_to_extract = [
     "E.coli Pres","E.coli Conf", "E.coli C-MF", "Colfm C-MF","ColfmF C-MF","Colfm P-MPN", "E.coli PMF","Colfm PMF","Colfm PMF10","E.coli PMF10","E.coli C-MPN","Ecoli P-MPNB", "ColfmF Conf","Colfrm Conf","Colfm Conf","ColfmF MF10", "ColformsPre", "F Coli Pre","EColi HH2","ColfmF PMF",
 ]
 
-# 读取输入文件并提取指定列的整行
+# Read the input file and extract rows with specified columns
 with open(input_file, mode='r', newline='', encoding='utf-8') as infile:
     reader = csv.DictReader(infile)
     rows_to_write = [row for row in reader if row['determinand.label'] in columns_to_extract]
 
-# 将提取的行写入输出文件
+# Write the extracted rows to the output file
 with open(output_file, mode='w', newline='', encoding='utf-8') as outfile:
     writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
     writer.writeheader()
