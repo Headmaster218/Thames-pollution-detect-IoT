@@ -1,10 +1,13 @@
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
+#include <SoftwareSerial.h>
 
 #define TDS_PIN A0
 #define TUR_PIN A1
 #define PH_PIN A2
 #define DO_PIN A3
+#define LORA_RXD 0  // Connect the TXD to the LoRa module
+#define LORA_TXD 1  // Connect the RXD to the LoRa module
 
 #define VREF 5.0     
 #define ADS_RES 1024.0
@@ -17,7 +20,7 @@
 #define CAL1_V (1600) //unit mv
 #define CAL1_T (25)   //unit ℃
 
-// RTC The counter value
+// RTC The counter value ---- sleep time
 #define RTC_PERIOD 1250
 
 // store the analog value in the array, read from ADC
@@ -35,6 +38,9 @@ int analogBufferIndex = 0,copyIndex = 0;
 // !!! remove it when add temp sensor; this variable is also used in DO calculation
 int temperature = 25;
 
+// Create soft serial ports (to avoid communication serial port conflict)
+SoftwareSerial loraSerial(LORA_RXD, LORA_TXD);
+
 const int DO_Table[41] = {
   14460, 14220, 13820, 13440, 13090, 12740, 12420, 12110, 11810, 11530,
   11260, 11010, 10770, 10530, 10300, 10080, 9860, 9660, 9460, 9270,
@@ -46,8 +52,6 @@ void readSensorData(SensorData *Do, SensorData *pH, SensorData *tur, SensorData 
   Do->voltage = getMedianNum(Do->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   int V_saturation = CAL1_V + 35 * temperature - CAL1_T * 35;
   Do->value = Do->voltage * DO_Table[temperature] / (V_saturation * 1000);
-  Serial.print("DO Value: ");
-  Serial.println(Do->value, 2); 
 
   tds->voltage = getMedianNum(tds->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   float compensationCoefficient = 1.0 + 0.02 * (temperature - 25.0);
@@ -55,43 +59,29 @@ void readSensorData(SensorData *Do, SensorData *pH, SensorData *tur, SensorData 
   float volSquare_tds = compensationVolatge * compensationVolatge;
   float volCube_tds = volSquare_tds * compensationVolatge;
   tds->value = (133.42f * volCube_tds - 255.86f * volSquare_tds + 857.39f * compensationVolatge) * 0.5f; 
-  Serial.print("TDS Value: ");
-  Serial.print(tds->value, 0);
-  Serial.println(" ppm");
 
   tur->voltage = getMedianNum(tur->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   float volSquare_tur = tur->voltage * tur->voltage;
   tur->value = -1120.4 * volSquare_tur + 5742.3 * tur->voltage - 4352.9;
-  Serial.print("Turbidity: ");
-  Serial.print(tur->value, 0);
-  Serial.println(" NTU");
 
   pH->voltage = getMedianNum(pH->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   pH->value = 3.5 * pH->voltage + OFFSET;
+
+  /*Serial.print("DO Value: ");
+  Serial.println(Do->value, 2); 
+  Serial.print("TDS Value: ");
+  Serial.print(tds->value, 0);
+  Serial.println(" ppm");
+  Serial.print("Turbidity: ");
+  Serial.print(tur->value, 0);
+  Serial.println(" NTU");
   Serial.print("pH Value: ");
-  Serial.println(pH->value, 2);
-}
+  Serial.println(pH->value, 2);*/
 
-// medium filter, remove outliers
-int getMedianNum(int bArray[], int iFilterLen) {
-  int bTab[iFilterLen];
-  memcpy(bTab, bArray, iFilterLen * sizeof(int));
-
-  int i, j, bTemp;
-  for (j = 0; j < iFilterLen - 1; j++) {
-    for (i = 0; i < iFilterLen - j - 1; i++) {
-      if (bTab[i] > bTab[i + 1]) {
-        bTemp = bTab[i];
-        bTab[i] = bTab[i + 1];
-        bTab[i + 1] = bTemp;
-      }
-    }
-  }
-
-  if ((iFilterLen & 1) > 0)
-    return bTemp = bTab[(iFilterLen - 1) / 2];
-  else
-    return bTemp = (bTab[iFilterLen / 2] + bTab[iFilterLen / 2 - 1]) / 2;
+  loraSerial.print(Do->value); loraSerial.print(",");
+  loraSerial.print(tds->value); loraSerial.print(",");
+  loraSerial.print(tur->value); loraSerial.print(",");
+  loraSerial.println(pH->value); 
 }
 
 void sampleData(){
@@ -124,6 +114,28 @@ void sampleData(){
   }
 }
 
+// medium filter, remove outliers
+int getMedianNum(int bArray[], int iFilterLen) {
+  int bTab[iFilterLen];
+  memcpy(bTab, bArray, iFilterLen * sizeof(int));
+
+  int i, j, bTemp;
+  for (j = 0; j < iFilterLen - 1; j++) {
+    for (i = 0; i < iFilterLen - j - 1; i++) {
+      if (bTab[i] > bTab[i + 1]) {
+        bTemp = bTab[i];
+        bTab[i] = bTab[i + 1];
+        bTab[i + 1] = bTemp;
+      }
+    }
+  }
+
+  if ((iFilterLen & 1) > 0)
+    return bTemp = bTab[(iFilterLen - 1) / 2];
+  else
+    return bTemp = (bTab[iFilterLen / 2] + bTab[iFilterLen / 2 - 1]) / 2;
+}
+
 // Setup RTC timer
 void setupRTC() {
   // 1. 使能 RTC，并选择 32kHz 内部振荡器作为时钟源
@@ -140,7 +152,7 @@ void setupRTC() {
 }
 
 void enterSleep() {
-  Serial.println("进入睡眠...");
+  Serial.println("Fall asleep...");
   Serial.flush();
   set_sleep_mode(SLEEP_MODE_STANDBY); // Enter Standby mode (RTC still running)
   sleep_enable();
@@ -162,8 +174,12 @@ void setup(){
     pinMode(TUR_PIN,INPUT);
     pinMode(PH_PIN,INPUT);
     pinMode(DO_PIN, INPUT);
+    Serial.println("Pins Initialized!");
 
+    loraSerial.begin(9600);
+    Serial.println("LoRa Sender Initialized!");
     setupRTC();
+    Serial.println("RTC Initialized!");
 }
 
 void loop(){
@@ -171,10 +187,10 @@ void loop(){
     enterSleep();
 
     if (rtc_wakeup) {
-      Serial.println("RTC 唤醒系统");
+      Serial.println("RTC wakes up the system");
       rtc_wakeup = false; // Reset flag
     }
-    Serial.println("被 RTC 唤醒！");
+    Serial.println("Wake up by RTC!");
     Serial.flush();
   }
 
