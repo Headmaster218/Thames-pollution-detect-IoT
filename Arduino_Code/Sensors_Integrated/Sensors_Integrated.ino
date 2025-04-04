@@ -1,29 +1,31 @@
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
 #include <SoftwareSerial.h>
+#include <Adafruit_MAX31865.h>
 
 #define TDS_PIN A0
 #define TUR_PIN A1
 #define PH_PIN A2
 #define DO_PIN A3
+#define TEMP_PIN A4
+#define MAX_CS 10  
+
 #define LORA_RXD 0  // Connect the TXD to the LoRa module
 #define LORA_TXD 1  // Connect the RXD to the LoRa module
 
 #define VREF 5.0     
 #define ADS_RES 1024.0
-#define SCOUNT  30           // sum of sample point, array length
+#define SCOUNT  5           // sum of sample point, array length
 #define OFFSET 0.00            //deviation compensate
 #define SAMPLE_INTERVAL 100U
-#define PRINT_INTERVAL 2000U
+#define PRINT_INTERVAL 500U
 
 //single-point calibration
 #define CAL1_V (1600) //unit mv
 #define CAL1_T (25)   //unit ℃
-
 // RTC The counter value ---- sleep time
-#define RTC_PERIOD 1250
+#define RTC_PERIOD 1230 //normally 1250=10s
 
-// store the analog value in the array, read from ADC
 struct SensorData {
   int Array[SCOUNT];
   int bufferTemp[SCOUNT];
@@ -36,7 +38,7 @@ volatile bool rtc_wakeup = false; // Used to signal whether the RTC is awake
 volatile bool rtc_ifsleep = false; // Determine whether the device needs to sleep
 int analogBufferIndex = 0,copyIndex = 0;
 // !!! remove it when add temp sensor; this variable is also used in DO calculation
-int temperature = 25;
+Adafruit_MAX31865 thermo = Adafruit_MAX31865(MAX_CS, 11, 12, 13);
 
 // Create soft serial ports (to avoid communication serial port conflict)
 SoftwareSerial loraSerial(LORA_RXD, LORA_TXD);
@@ -48,11 +50,17 @@ const int DO_Table[41] = {
   7560, 7430, 7300, 7180, 7070, 6950, 6840, 6730, 6630, 6530, 6410
 };
 
+
 void readSensorData(SensorData *Do, SensorData *pH, SensorData *tur, SensorData *tds){
+  // obtain temp from PT100 sensor
+  temperature = thermo.temperature(100, 4300);
+
+  // calculate DO values
   Do->voltage = getMedianNum(Do->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   int V_saturation = CAL1_V + 35 * temperature - CAL1_T * 35;
-  Do->value = Do->voltage * DO_Table[temperature] / (V_saturation * 1000);
+  Do->value = Do->voltage * DO_Table[(int)temperature] / (V_saturation * 1000);
 
+  // caluclate TDS values
   tds->voltage = getMedianNum(tds->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   float compensationCoefficient = 1.0 + 0.02 * (temperature - 25.0);
   float compensationVolatge = tds->voltage / compensationCoefficient;
@@ -60,28 +68,34 @@ void readSensorData(SensorData *Do, SensorData *pH, SensorData *tur, SensorData 
   float volCube_tds = volSquare_tds * compensationVolatge;
   tds->value = (133.42f * volCube_tds - 255.86f * volSquare_tds + 857.39f * compensationVolatge) * 0.5f; 
 
+  // calculate Turbidity values
   tur->voltage = getMedianNum(tur->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   float volSquare_tur = tur->voltage * tur->voltage;
   tur->value = -1120.4 * volSquare_tur + 5742.3 * tur->voltage - 4352.9;
 
+  // calculate pH values
   pH->voltage = getMedianNum(pH->bufferTemp, SCOUNT) * (float)VREF / ADS_RES;
   pH->value = 3.5 * pH->voltage + OFFSET;
 
-  /*Serial.print("DO Value: ");
+  Serial.print("DO Value: ");
   Serial.println(Do->value, 2); 
   Serial.print("TDS Value: ");
   Serial.print(tds->value, 0);
   Serial.println(" ppm");
+  /*
   Serial.print("Turbidity: ");
   Serial.print(tur->value, 0);
   Serial.println(" NTU");
   Serial.print("pH Value: ");
-  Serial.println(pH->value, 2);*/
+  Serial.println(pH->value, 2);
+  Serial.print("Temperature: ");
+  Serial.println(temperature, 2);*/
 
   loraSerial.print(Do->value); loraSerial.print(",");
   loraSerial.print(tds->value); loraSerial.print(",");
   loraSerial.print(tur->value); loraSerial.print(",");
-  loraSerial.println(pH->value); 
+  loraSerial.print(pH->value); loraSerial.print(",");
+  loraSerial.println(temperature);
 }
 
 void sampleData(){
@@ -174,7 +188,10 @@ void setup(){
     pinMode(TUR_PIN,INPUT);
     pinMode(PH_PIN,INPUT);
     pinMode(DO_PIN, INPUT);
+    pinMode(TEMP_PIN, INPUT);
     Serial.println("Pins Initialized!");
+
+    thermo.begin(MAX31865_3WIRE);
 
     loraSerial.begin(9600);
     Serial.println("LoRa Sender Initialized!");
