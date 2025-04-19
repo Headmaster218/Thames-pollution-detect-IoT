@@ -2,6 +2,8 @@ import csv
 import serial
 import sqlite3
 import json
+import random
+from datetime import datetime, timedelta
 import serial.tools.list_ports
 from datetime import datetime
 import paho.mqtt.client as mqtt
@@ -27,15 +29,27 @@ def save_to_db(data):
 
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO sensor_data (DO, TDS, Tur, pH, Temp) VALUES (?, ?, ?, ?, ?)", 
-                   (data[0], data[1], data[2], data[3], data[4]))
+    '''
+    cursor.execute("INSERT INTO sensor_data (DO, TDS, Tur, pH, Temp, coli) VALUES (?, ?, ?, ?, ?, ?)", 
+                   (data[0], data[1], data[2], data[3], data[4], data[5]))'
+    '''
+    cursor.execute('''
+            INSERT INTO sensor_data (timestamp, DO, TDS, Tur, pH, Temp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (data[0], data[1], data[2], data[3], data[4], data[5]))
     conn.commit()
     conn.close()
 
 def query_history(start_time, end_time):
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
-    cursor.execute("SELECT timestamp, DO, TDS, Tur, pH, Temp FROM sensor_data WHERE timestamp BETWEEN ? AND ?", (start_time, end_time))
+    #cursor.execute("SELECT timestamp, DO, TDS, Tur, pH, Temp FROM sensor_data WHERE timestamp BETWEEN ? AND ?", (start_time, end_time))
+    cursor.execute("""
+        SELECT timestamp, DO, TDS, Tur, pH, Temp
+        FROM sensor_data 
+        WHERE DATE(timestamp) BETWEEN ? AND ?
+        ORDER BY timestamp
+    """, (start_time, end_time))
     data = cursor.fetchall()
     conn.close()
     return data
@@ -53,6 +67,38 @@ def on_message(client, userdata, msg):
         client.publish(response_topic, response)
         print(f"Sent history data to {response_topic}")
 
+def generate_historical_data():
+    """生成前7天的随机数据，间隔10秒"""
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    
+    end_time = datetime.now()
+    start_time = end_time - timedelta(days=7)
+    
+    current_time = start_time
+    while current_time <= end_time:
+        # 生成随机传感器数据（范围可根据实际调整）
+        data = [
+            current_time.strftime("%Y-%m-%d %H:%M:%S"),
+            round(random.uniform(1.0, 10.0), 2),  # DO
+            round(random.uniform(100.0, 2000.0), 2),  # TDS
+            round(random.uniform(100.0, 3000.0), 2),  # Tur
+            round(random.uniform(6.0, 8.5), 2),  # pH
+            round(random.uniform(15.0, 35.0), 2)   # Temp
+        ]
+        
+        # 存入数据库
+        cursor.execute('''
+            INSERT INTO sensor_data (timestamp, DO, TDS, Tur, pH, Temp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', data)
+        
+        # 前进10秒
+        current_time += timedelta(seconds=10)
+    
+    conn.commit()
+    conn.close()
+    print(f"Generated historical data from {start_time} to {end_time}")
 
 # Initialize the serial port
 ser = serial.Serial("COM3", 9600)
@@ -60,6 +106,7 @@ ser = serial.Serial("COM3", 9600)
 # Configuration of the database
 db_file = "C:\\Users\\XCH\\Desktop\\Design_Sensor_System\\code\\Function_Blocks\\sensor_data.db"
 init_db() 
+generate_historical_data()
 
 # MQTT broker address and port
 broker_address = "127.0.0.1"  
@@ -102,13 +149,15 @@ if ser.isOpen():
                     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
                     
                     #data_output = [date, time] + data_list
-                    data_output = [timestamp] + data_list
+                    coli = str(round(random.uniform(100.0, 200.0), 2)) # Random coli value需要后期被修
+                    data_output = [timestamp] + data_list + [coli]
                     message = f"Data: {data_output}" # MQTT message
                     print(message)
 
                     # Save data to database & publish to MQTT broker
-                    save_to_db(data_list)
-                    client.publish(send_topic, message) 
+                    save_to_db(data_output)
+                
+                    client.publish(send_topic, json.dumps(data_output)) 
 
                     with open(csv_filename, "a", newline="") as file:
                         writer = csv.writer(file)

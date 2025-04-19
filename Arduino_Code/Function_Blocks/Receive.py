@@ -5,30 +5,35 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 # MQTT broker address, port, topic
-broker_address = "127.0.0.1"  # ip address 换成xch的ip地址
+broker_address = "192.168.0.197"  # ip address 换成xch的ip地址
 broker_port = 1883
-send_topic = "AQ/data"  
+send_topic = "AQ/send"  
 request_topic = "AQ/request"  
 response_topic = "AQ/response"  
 
-received_data = []
+realtime_data = []
 history_data = []
 
 
 # Callback functions
 def on_message(client, userdata, msg):
         try:
-            payload = json.loads(msg.payload.decode())
+            #print(f"Received message on {msg.topic}: {msg.payload}")
+            payload_str = msg.payload.decode('utf-8')
+            payload = json.loads(payload_str)
             
             if msg.topic == send_topic:
-                received_data.append(payload)
-                print(f"Received real-time data: {payload}")
+                # 处理实时数据
+                realtime_data.append(payload)
+                print("\n=== New Realtime Data ===")
+                print(f"Message: {payload}")
+
                 
             elif msg.topic == response_topic:
                 if "data" in payload:
                     history_data = payload["data"]
-                    print(f"Received history data:")
-                    df = pd.DataFrame(history_data, 
+                    print("\n=== History Data ===")
+                    df = pd.DataFrame(payload["data"], 
                                      columns=["Timestamp", "DO", "TDS", "Tur", "pH", "Temp"])
                     print(df)
                 
@@ -38,8 +43,7 @@ def on_message(client, userdata, msg):
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
         print(f"Successfully connect to MQTT Broker: {broker_address}:{broker_port}")
-        client.subscribe(send_topic)  
-        client.subscribe(response_topic)  
+        client.subscribe([(send_topic, 0), (response_topic, 0)])
         print(f"Subscribed topics: {send_topic} and {response_topic}")
     else:
         print(f"Connection failed, error code: {reason_code}")
@@ -72,25 +76,23 @@ client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.on_connect = on_connect
 client.on_message = on_message  
 
-client.subscribe(send_topic)  
-client.subscribe(response_topic)  
+client.connect(broker_address, broker_port) 
 client.loop_start()
 
 #start_time, end_time = get_user_input()
-start_time = "2025-03-24 16:10:32"
-end_time = "2025-03-24 16:11:23"
+start_time = "2025-04-14 10:33:34"
+end_time = "2025-04-14 10:34:02"
+request_history(start_time, end_time)
 
-#request_history(start_time, end_time)
 
-while True:
-    try:
-        client.connect(broker_address, broker_port)
-        request_history(start_time, end_time)
+try:
+    print("\nListening for realtime data... Press Ctrl+C to stop")
+    while True:
+        pass  # 主循环保持运行，让回调函数处理消息
 
-    except KeyboardInterrupt:
-        print("\n用户中断，正在断开连接...")
-        client.loop_start()
-        client.disconnect()
-        print("已断开MQTT连接")
-        break
+except KeyboardInterrupt:
+    print("\nUser interrupted, disconnecting...")
+    client.loop_stop()
+    client.disconnect()
+    print("Disconnected from MQTT broker")
 
