@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Historical Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        .container {
+            width: 80%;
+            margin-top: 20px;
+        }
+        .chart-container {
+            margin-bottom: 40px;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Historical Data - {{ date }}</h1>
+    {% if error %}
+        <p style="color: red;">Error: {{ error }}</p>
+    {% elif not data %}
+        <p>No data available for the selected date.</p>
+    {% else %}
+        <div class="container">
+            {% for point in data %}
+                <div class="chart-container">
+                    <h2>Monitoring Point {{ point.point_id }} - {{ point.location }}</h2>
+                    {% for param in ["pH", "Turbidity", "DO2", "Conductivity", "Ecoli"] %}
+                        <h3>{{ param }}</h3>
+                        <canvas id="chart-point-{{ point.point_id }}-{{ param }}"></canvas>
+                    {% endfor %}
+                </div>e }};
+            {% endfor %}
+        </div>
+    {% endif %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const monitoringData = {{ data|tojson|safe }};
+            const timeSteps = Array.from({ length: 24 }, (_, i) => {
+                const hour = i.toString().padStart(2, "0");
+                return `${hour}:00`; // Fixed 24-hour time axis
+            });
+
+            monitoringData.forEach(point => {
+                ["pH", "Turbidity", "DO2", "Conductivity", "Ecoli"].forEach(param => {
+                    const ctx = document.getElementById(`chart-point-${point.point_id}-${param}`).getContext("2d");
+                    const values = timeSteps.map(t => point.data[t]?.[param] || null); // Handle missing data
+                    new Chart(ctx, {
+                        type: "line",
+                        data: {
+                            labels: timeSteps,
+                            datasets: [{
+                                label: param,
+                                data: values,
+                                borderColor: "blue",
+                                backgroundColor: "rgba(0, 0, 255, 0.1)",
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { title: { display: true, text: "Time" } },
+                                y: { title: { display: true, text: "Value" } }
+                            }
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
