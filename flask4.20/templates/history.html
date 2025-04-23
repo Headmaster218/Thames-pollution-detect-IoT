@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Historical Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet"> <!-- Added Google Fonts -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: url("../static/BG.png") no-repeat center center fixed;
+            background-size: cover;
+            color: white; /* Set font color to white */
+            font-family: 'Roboto', sans-serif; /* Apply stylish font */
+        }
+        h1, h2 {
+            margin-top: 20px; /* Bold for headings */
+        }
+        p {
+            font-weight: 300; /* Light font for paragraphs */
+            color: white; /* Ensure paragraph text is white */
+        }
+        .chart-container h2 {
+            color: white; /* Ensure chart titles are white */
+        }
+        .container {
+            width: 100%; /* Increased width */
+            margin-top: 20px;
+        }
+        .chart-container {
+            margin-bottom: 40px;
+            height: 500px; /* Fixed height */
+            max-width: auto; /* Increased maximum width */
+        }
+        canvas {
+            width: 100% !important; /* Force canvas to fill the container */
+            height: 100% !important; /* Force canvas to fill the container */
+        }
+    </style>
+</head>
+<body>
+    <h1>Historical Data - {{ date }}</h1>
+    {% if error %}
+        <p style="color: red;">Error: {{ error }}</p>
+    {% elif not data %}
+        <p>No data available for the selected date.</p>
+    {% else %}
+        <div class="container">
+            {% for param in ["DOxy", "TDSs", "Tur", "pH", "Temp", "Ecoli"] %}
+                <div class="chart-container">
+                    <h2>
+                        {% if param == "DOxy" %}
+                            Dissolved Oxygen
+                        {% elif param == "TDSs" %}
+                            Total Dissolved Solids
+                        {% elif param == "Tur" %}
+                            Turbidity
+                        {% elif param == "pH" %}
+                            pH Level
+                        {% elif param == "Temp" %}
+                            Temperature
+                        {% elif param == "Ecoli" %}
+                            E. coli
+                        {% endif %}
+                    </h2>
+                    <canvas id="chart-{{ param }}"></canvas>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const rawData = {{ data|tojson|safe }};
+            const parameters = ["DOxy", "TDSs", "Tur", "pH", "Temp", "Ecoli"]; // Added Ecoli
+
+            // Group data by minute and calculate averages
+            const groupedData = {};
+            rawData.forEach(entry => {
+                const timestamp = entry[0].slice(0, 16); // Group by minute (YYYY-MM-DD HH:MM)
+                if (!groupedData[timestamp]) {
+                    groupedData[timestamp] = { count: 0, sums: Array(parameters.length).fill(0) };
+                }
+                groupedData[timestamp].count += 1;
+                entry.slice(1).forEach((value, index) => {
+                    groupedData[timestamp].sums[index] += value;
+                });
+            });
+
+            const timestamps = Object.keys(groupedData).sort();
+            const averagedData = timestamps.map(timestamp => {
+                const { count, sums } = groupedData[timestamp];
+                return sums.map(sum => sum / count); // Calculate averages
+            });
+
+            parameters.forEach((param, index) => {
+                const ctx = document.getElementById(`chart-${param}`).getContext("2d");
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: timestamps.map(ts => ts.slice(11)), // Extract only HH:MM from the timestamp
+                        datasets: [{
+                            label: param,
+                            data: averagedData.map(values => values[index]), // Extract averaged values for the parameter
+                            borderColor: "white", // Set line color to white
+                            backgroundColor: "rgba(255, 255, 255, 0.3)", // White fill color with transparency
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, // Disable aspect ratio to prevent shrinking
+                        plugins: {
+                            legend: { display: true }
+                        },
+                        scales: {
+                            x: { 
+                                title: { display: true, text: "Time (HH:MM)" } // Updated axis title
+                            },
+                            y: { 
+                                title: { display: true, text: "Value" } 
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -43,15 +43,26 @@
             document.getElementById("view-data-btn").addEventListener("click", function () {
                 const selectedDate = $("#datepicker").val();
                 if (selectedDate) {
-                    alert(`Redirecting to /history/${selectedDate}`);  // Debugging alert
-                    window.location.href = `/history/${selectedDate}`;
+                    fetch("/send-date", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ date: selectedDate })
+                    })
+                    .then(response => response.json())
+                        .then(data => {
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                            }
+                        })
+
+                    .catch(error => console.error("Error sending date:", error));
                 } else {
                     alert("Please select a date!");
                 }
             });
 
             // Call the function to start updating popups every second
-            setInterval(updatePopupContent, 1000);
+            setInterval(updatePopupContent, 3000);
         });
 
         function updatePopupContent() {
@@ -62,11 +73,12 @@
                         popup.innerHTML = `
                             <b>Monitoring Point 1 </b><br>
                             <b>Timestamp:</b> ${latestData.timestamp || "N/A"}<br>
-                            <b>DO:</b> ${latestData.DO || "N/A"}<br>
-                            <b>TDS:</b> ${latestData.TDS || "N/A"}<br>
-                            <b>Tur:</b> ${latestData.Tur || "N/A"}<br>
+                            <b>DO:</b> ${latestData.DOxy || "0.0"}<br>
+                            <b>TDS:</b> ${latestData.TDSs || "0.0"}<br>
+                            <b>Tur:</b> ${latestData.Tur>0?latestData.Tur:-latestData.Tur || "N/A"}<br>
                             <b>pH:</b> ${latestData.pH || "N/A"}<br>
                             <b>Temp:</b> ${latestData.Temp || "N/A"}<br>
+                            <b>E.coli:</b> ${latestData.coli || "N/A"}<br>
                         `;
                     });
                 })
@@ -88,6 +100,7 @@
                             <b>Tur:</b> {{latest_saved_data.get("Tur", "N/A")}}<br>
                             <b>pH:</b> {{latest_saved_data.get("pH", "N/A")}}<br>
                             <b>Temp:</b> {{latest_saved_data.get("Temp", "N/A")}}<br>
+                            <b>E.coli:</b> {{latest_saved_data.get("E.coli", "N/A")}}<br>
                         `;
                         let marker = L.circleMarker(point.location, {
                             radius: 8,
@@ -107,6 +120,8 @@
             height: 100%;
             margin: 0;
             padding: 0;
+            background: url("/static/BG.png") no-repeat center center fixed;
+            background-size: cover;
         }
 
         h1 {
@@ -121,11 +136,11 @@
     </style>
 </head>
 <body>
-    <h1>River Water Quality Monitoring</h1>
+    <h1 style="font-family: 'Arial', sans-serif; color: white;">River Water Quality Monitoring</h1>
     <!-- Commented out time slider -->
     <!-- <input type="range" id="time-slider" min="0" max="23" step="1">
     <span id="time-label"></span> -->
-    <input type="text" id="datepicker" placeholder="Select Date">
+    <input type="text" id="datepicker" placeholder="Enter Date">
     <button id="view-data-btn">View Data</button>
     <div id="map-frame"></div>
 </body>

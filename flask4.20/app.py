@@ -1,12 +1,13 @@
 import base64
 import io
-from flask import Flask, render_template, jsonify, send_from_directory, url_for
+from flask import Flask, render_template, jsonify, send_from_directory, url_for, request, redirect
 import geopandas as gpd
 import folium
 from matplotlib import pyplot as plt
 import numpy as np
 import os
-from utils import generate_plots, get_monitoring_data
+from utils import generate_plots, get_monitoring_data, load_realtime_data, get_latest_saved_data
+
 from datetime import datetime
 
 app = Flask(__name__)
@@ -37,11 +38,14 @@ def convert_datetime(obj):
         return obj.isoformat()  # 转换为字符串 "2025-03-22T15:27:37"
     raise TypeError("Type not serializable")
 
+latest_saved_data = []
+
 @app.route("/")
 def index():
+    latest_saved_data = get_latest_saved_data()
     monitoring_data = get_monitoring_data()
     generate_plots(monitoring_data, "plot")
-    return render_template("index.html")
+    return render_template("index.html", latest_saved_data=latest_saved_data)
 
 def plot():
     fig, ax = plt.subplots()
@@ -55,29 +59,58 @@ def plot():
     
     return f'<img src="data:image/png;base64,{img_base64}"/>'
 
+@app.route("/update", methods=["POST"])
+def update():
+    # 读取最新数据
+    latest_saved_data = get_latest_saved_data()
+    print(f"Latest saved data: {latest_saved_data}")  # Debug information
+    return jsonify(latest_saved_data)
+    
+    # 返回最新数据
 @app.route("/map")
 def generate_map():
     m = folium.Map(location=[51.55, -0.025], zoom_start=12, tiles="CartoDB positron")
 
-    # 绘制 River Thames
+    # Draw River Thames
     for segment in river_segments:
         folium.PolyLine(segment, color="green", weight=3, opacity=0.8).add_to(m)
 
-    # 获取监测点数据
+    # Get monitoring points
     monitoring_points = get_monitoring_data()
 
-    # 生成地图上的监测点
-    for i, point in enumerate(monitoring_points):
+    # Filter for Monitoring Point 1
+    point = next((p for p in monitoring_points if p["point_id"] == 1), None)
+    if point:
         latest_time = sorted(point["data"].keys())[-1]
         latest_data = point["data"][latest_time]
+
+        # Retrieve the latest saved data
+        latest_saved_data = get_latest_saved_data()
+        print(f"Latest saved data: {latest_saved_data}")  # Debug information
+        if latest_saved_data:
+            timestamp = latest_saved_data.get("timestamp", "N/A")
+            saved_data_html = f"""
+            <b>Latest Saved Data:</b><br>
+            <b>Timestamp:</b> {timestamp}<br>
+            <b>DO:</b> {latest_saved_data.get("DO", "N/A")}<br>
+            <b>TDS:</b> {latest_saved_data.get("TDS", "N/A")}<br>
+            <b>Tur:</b> {latest_saved_data.get("Tur", "N/A")}<br>
+            <b>pH:</b> {latest_saved_data.get("pH", "N/A")}<br>
+            <b>Temp:</b> {latest_saved_data.get("Temp", "N/A")}<br>
+            """
+        else:
+            saved_data_html = "<b>Latest Saved Data:</b> No data available<br>"
+
         popup_html = f"""
-        <b>监测点 {i+1}</b><br>
+        <b>监测点 1</b><br>
         <b>pH:</b> {latest_data["pH"]:.2f} <br>
+        <b>时间:</b> 1234 <br>
         <b>Turbidity:</b> {latest_data["Turbidity"]:.2f} NTU <br>
         <b>DO2:</b> {latest_data["DO2"]:.2f} mg/L <br>
         <b>Conductivity:</b> {latest_data["Conductivity"]:.2f} µS/cm <br>
         <b>E.coli:</b> {latest_data["Ecoli"]:.2f} CFU/100mL <br>
-        <a href='/plots/{i+1}'>View Detailed Data</a>
+        {saved_data_html}
+        <a href='/plots/1'>View Detailed Data</a>
         """
 
         folium.CircleMarker(
@@ -135,12 +168,11 @@ def serve_plots(filename):
 
 @app.route("/api/monitoring/<int:point_id>")
 def get_monitoring_point(point_id):
-    monitoring_data = get_monitoring_data()
-    for point in monitoring_data:
-        if point["point_id"] == point_id:
-            image_url = url_for('serve_plots', filename=f'plot_{point_id}.png')  # 获取图像 URL
-            point["image_url"] = image_url  # 在数据中添加图像 URL
-            return jsonify(point)
+    # Load real-time data from files
+    realtime_data = load_realtime_data()
+    for data in realtime_data:
+        if data["point_id"] == point_id:
+            return jsonify(data)
     return jsonify({"error": "Monitoring point not found"}), 404
 
 @app.route("/api/monitoring")
@@ -170,14 +202,51 @@ def get_monitoring_point_at_time_and_date(point_id, time, date):
 @app.route("/api/map")
 def get_riverline():
     return jsonify(river_segments)
+history_data = []
+date = []
 
-@app.route("/history/<string:date>")
-def history(date):
+@app.route("/history/")
+def history():
     try:
-        monitoring_data = get_monitoring_data(date)
+        global history_data, date
+        monitoring_data = history_data
     except ValueError as e:
         return render_template("history.html", date=date, data=[], error=str(e))
     return render_template("history.html", date=date, data=monitoring_data, error=None)
+
+@app.route("/send-date", methods=["POST"])
+def send_date():
+    """Receive the selected date from the frontend and send it to the broker."""
+    try:
+        global date
+        data = request.get_json()
+        selected_date = data.get("date")
+        date = selected_date
+        if not selected_date:
+            return jsonify({"error": "No date provided"}), 400
+        print(f"Selected date: {selected_date}")
+
+        from utils import send_date_to_broker, check_for_new_messages
+        send_date_to_broker(selected_date)
+        response = check_for_new_messages()
+        if response is None:
+            return jsonify({"error": "No response from broker"}), 500
+        else:
+            global history_data
+            # Filter the response to include only one entry per hour
+            filtered_data = []
+            seen_hours = set()
+            for entry in response:
+                timestamp = entry[0]
+                hour = timestamp.split(" ")[1].split(":")[0]  # Extract the hour
+                if hour not in seen_hours:
+                    filtered_data.append(entry)
+                    seen_hours.add(hour)
+            history_data = filtered_data
+            print(f"Filtered history data: {history_data}")
+            return jsonify({"redirect": "/history"})            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

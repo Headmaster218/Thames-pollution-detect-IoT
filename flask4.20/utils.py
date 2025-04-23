@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import json
 import sqlite3
 import pandas as pd
+import time
 import paho.mqtt.client as mqtt
 
 # Generate a time series of 24 hours for the current day (hours only)
@@ -36,7 +37,7 @@ def get_monitoring_data(date=None):
                     "Turbidity": np.random.uniform(3.0, 5.0),
                     "DO2": np.random.uniform(5.5, 7.0),
                     "Conductivity": np.random.uniform(240, 280),
-                    "Ecoli": np.random.uniform(1, 10),
+                    "coli": np.random.uniform(1, 10),
                 }
                 for t in time_steps
             }
@@ -57,7 +58,7 @@ def generate_plots(data_list, filename, date=None):
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    for param in ["pH", "Turbidity", "DO2", "Conductivity", "Ecoli"]:
+    for param in ["pH", "Turbidity", "DO2", "Conductivity", "coli"]:
         try:
             ax.plot(
                 time_steps, 
@@ -79,7 +80,7 @@ def generate_plots(data_list, filename, date=None):
         plt.savefig(f"static/{filename}.png")
 
 # MQTT broker address, port, topic
-broker_address = "192.168.0.197"  # Replace with the correct IP address
+broker_address = "192.168.137.1"  # Replace with the correct IP address
 broker_port = 1883
 send_topic = "AQ/send"
 request_topic = "AQ/request"
@@ -96,14 +97,15 @@ def save_realtime_data(payload):
     """Save the new data to a file."""
     try:
         # Ensure payload is in the correct format
-        if isinstance(payload, list) and len(payload) == 6:
+        if isinstance(payload, list) and len(payload) == 7:
             data = {
                 "timestamp": payload[0],  # Keep timestamp as a string
-                "DO": float(payload[1]),
-                "TDS": float(payload[2]),
+                "DOxy": float(payload[1]),
+                "TDSs": float(payload[2]),
                 "Tur": float(payload[3]),
                 "pH": float(payload[4]),
-                "Temp": float(payload[5])
+                "Temp": float(payload[5]),
+                "coli": float(payload[6])
             }
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             filename = os.path.join(data_save_dir, f"data_{timestamp}.json")
@@ -150,28 +152,23 @@ def on_message(client, userdata, msg):
         if msg.topic == send_topic:
             # Handle real-time data
             realtime_data.append(payload)
-            print("\n=== New Realtime Data ===")
-            print(f"Message: {payload}")
+            # print("\n=== New Realtime Data ===")
+            # print(f"Message: {payload}")
 
             # Save data to file
             save_realtime_data(payload)
             
         elif msg.topic == response_topic:
-            if "data" in payload:
-                global history_data
-                history_data = payload["data"]
-                print("\n=== History Data ===")
-                df = pd.DataFrame(payload["data"], 
-                                  columns=["Timestamp", "DO", "TDS", "Tur", "pH", "Temp"])
-                print(df)
+            global history_data
+            history_data = payload
     except Exception as e:
         print(f"Error processing message: {e}")
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
         print(f"Successfully connected to MQTT Broker: {broker_address}:{broker_port}")
-        client.subscribe([(send_topic, 0), (response_topic, 0)])
-        print(f"Subscribed to topics: {send_topic} and {response_topic}")
+        client.subscribe([(send_topic, 0), (response_topic, 0), (request_topic, 0)])
+        print(f"Subscribed to topics: {send_topic} and {response_topic} and {request_topic}")
     else:
         print(f"Connection failed, error code: {reason_code}")
 
@@ -197,6 +194,19 @@ def request_history(start_time, end_time):
     client.publish(request_topic, payload)
     print(f"Sent request for data from {start_time} to {end_time}")
 
+def send_date_to_broker(selected_date):
+    """Send the selected date to the MQTT broker."""
+    try:
+        payload = json.dumps({
+            "start_time": selected_date,
+            "end_time": selected_date
+        })
+        client.publish(request_topic, payload)
+        print(f"Sent date {selected_date} to broker on topic {request_topic}")
+    except Exception as e:
+        print(f"Error sending date to broker: {e}")
+
+
 # MQTT client setup
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.on_connect = on_connect
@@ -204,6 +214,21 @@ client.on_message = on_message
 
 client.connect(broker_address, broker_port)
 client.loop_start()
+
+def check_for_new_messages():
+    """Check if there are new messages on the response topic."""
+    time.sleep(0.5)
+    global history_data
+    if history_data:
+        print("\n=== New Message on Response Topic ===")
+        print(history_data)
+        print("\n=== New Message on Response Topic ===")
+
+        return history_data
+    else:
+        print("No new messages on the response topic.")
+        return None
+
 
 # Example usage
 if __name__ == "__main__":

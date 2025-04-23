@@ -5,7 +5,7 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 # MQTT broker address, port, topic
-broker_address = "192.168.0.197"  # ip address 换成xch的ip地址
+broker_address = "172.20.10.12"  # ip address 换成xch的ip地址
 broker_port = 1883
 send_topic = "AQ/send"  
 request_topic = "AQ/request"  
