@@ -22,3 +22,5 @@ MLModel/2.3rearranged_columns_Full.csv
 MLModel/2.3rearranged_columns_Full_New.csv
 
 *.pth
+
+*.pkl
