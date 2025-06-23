@@ -4,7 +4,7 @@ ML_Main/station/
 MLModel/1 2000-2025Coliform.csv
 
 **/.DS_Store
-**/.__pycache__
+**/__pycache__/
 
 ML_Main/2.1extracted_columns_all_kinds.csv
 

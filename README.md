@@ -16,6 +16,7 @@ This project presents a **low-cost, deployable, AI-integrated platform** for mon
 
 ## 🧠 System Architecture
 
+```
        +------------------+      LoRa        +-------------------+
        | Floating Buoy    |----------------->| LoRa Gateway      |
        | (Sensors + MCU)  |                  | (MQTT Broker)     |
@@ -32,7 +33,7 @@ This project presents a **low-cost, deployable, AI-integrated platform** for mon
                                  |   Web Dashboard & Mobile App  |
                                  |   (Real-time + Historical)    |
                                  +-------------------------------+
-
+```
 ---
 
 ## 🧩 System Modules
@@ -90,14 +91,18 @@ This project presents a **low-cost, deployable, AI-integrated platform** for mon
 
 ## 📁 Folder Structure
 
-root/ 
-├── hardware_design/ # 3D models, schematics, wiring 
-├── firmware/ # Arduino + sampling controller code 
-├── server/ # MQTT broker + data server code 
-├── frontend/ # Web dashboard (React / Vue) 
-├── mobile_app/ # Mobile interface 
-├── ml_model/ # Preprocessing, training scripts, model export 
-└── docs/ # Report, diagrams, references
+```
+Root/
+├── 3D_Models/        # CAD models
+├── Arduino_Code/     # Embedded firmware
+├── Backend_code/     # Backend services, APIs
+├── MLcode_Tommy_try/ # Experimental ML models by "Tommy"
+├── ML_Main/          # Main ML pipeline: data, preprocess, training, model
+├── Reports/          # Project documentation, research papers, final reports
+└── Visualization/    # Frontend interfaces for data visualization and monitoring
+    ├── APP/          # Mobile app interface "BlueGuardian"
+    └── Web/          # Web dashboard 
+```
 
 
 ---
