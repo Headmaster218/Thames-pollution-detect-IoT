@@ -1,25 +1,26 @@
 
-MLModel/station/
+ML_Main/station/
 
 MLModel/1 2000-2025Coliform.csv
 
-.DS_Store
+**/.DS_Store
+**/.__pycache__
 
-MLModel/2.1extracted_columns_all_kinds.csv
+ML_Main/2.1extracted_columns_all_kinds.csv
 
-MLModel/2.2extracted_specific_columns.csv
+ML_Main/2.2extracted_specific_columns.csv
 
-MLModel/2.3rearrange_columnsl.py
+ML_Main/2.3rearrange_columnsl.py
 
-MLModel/2.4 hand merge Cond \@ 25COxygen DissTemp Turbidity.csv
+ML_Main/2.4 hand merge Cond \@ 25COxygen DissTemp Turbidity.csv
 
-MLModel/1 2000-2025Coliform_New.csv
+ML_Main/1 2000-2025Coliform_New.csv
 
-MLModel/2.2extracted_specific_columns_New.csv
+ML_Main/2.2extracted_specific_columns_New.csv
 
-MLModel/2.3rearranged_columns_Full.csv
+ML_Main/2.3rearranged_columns_Full.csv
 
-MLModel/2.3rearranged_columns_Full_New.csv
+ML_Main/2.3rearranged_columns_Full_New.csv
 
 *.pth
 
