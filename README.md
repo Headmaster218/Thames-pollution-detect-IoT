@@ -1,6 +1,6 @@
 # Intelligent Waterborne Fecal Contamination Monitoring System
 
-This project presents a **low-cost, deployable, AI-integrated platform** for monitoring fecal contamination in natural waters. By using **inorganic water quality parameters** (e.g., DO, NH₃-N, turbidity, conductivity) as surrogate inputs, the system predicts **E. coli concentration** and collects physical water samples for future validation. It integrates **real-time sensing, wireless transmission, machine learning inference, data visualization, and automated water sampling**, forming a complete perception–prediction–collection loop.
+This project presents a **low-cost, deployable, AI-integrated platform** for monitoring fecal contamination in natural waters. By using **inorganic water quality parameters** (e.g., DO, PH, turbidity, conductivity) as surrogate inputs, the system predicts **E. coli concentration** and collects physical water samples for future validation. It integrates **real-time sensing, wireless transmission, machine learning inference, data visualization, and automated water sampling**, forming a complete perception–prediction–collection loop.
 
 ---
 
@@ -17,14 +17,14 @@ This project presents a **low-cost, deployable, AI-integrated platform** for mon
 ## 🧠 System Architecture
 
        +------------------+      LoRa        +-------------------+
-       | Floating Buoy    |----------------->| LoRa Gateway       |
-       | (Sensors + MCU)  |                  | (MQTT Broker)      |
+       | Floating Buoy    |----------------->| LoRa Gateway      |
+       | (Sensors + MCU)  |                  | (MQTT Broker)     |
        +--------+---------+                  +-------------------+
                 |                                        |
-                | USB + LoRa                             v
+                | LoRa                                   v MQTT
       +---------v---------+                       +---------------+
       | Autonomous Sampler|                       | Cloud Server  |
-      | (RTC + Pump +     |<------MQTT----------->| Data Storage  |
+      | (RTC + Pump +     |<--------------------->| Data Storage  |
       |  Bottle Rotation) |                       +------+--------+
       +-------------------+                              |
                                                          v
@@ -38,20 +38,20 @@ This project presents a **low-cost, deployable, AI-integrated platform** for mon
 ## 🧩 System Modules
 
 ### 1. 🧪 Sensor Unit (Floating Buoy)
-- Turbidity, DO, NH₃-N, conductivity sensors
-- Arduino-based control with solar power
+- Turbidity, Dissolved Oxygen, PH, conductivity sensors
+- Arduino-based circuit with solar power
 - Periodic sampling + LoRa transmission
 
-### 2. 🔄 Autonomous Sampling Unit (In Development)
+### 2. 🔄 Autonomous Sampling Unit 
 - Peristaltic pump + rotating vial mechanism
 - RTC-controlled periodic water collection
-- Time-synced with sensor data for validation
+- Time-synced with sensor data via LoRa
 
 ### 3. 🌐 Server & Visualization
-- LoRa gateway + MQTT + Node.js backend
-- Database (e.g., InfluxDB / SQLite / Firebase)
-- Web frontend with charts and data export
-- Mobile app (map + data overlay)
+- LoRa gateway + MQTT + Python backend
+- Database (SQLite)
+- Web frontend with charts and map
+- Mobile app with charts and map
 
 ### 4. 🧠 Machine Learning Module
 - Trained neural network (FCN) on public water data (~23GB → 1MB preprocessed)
@@ -90,7 +90,14 @@ This project presents a **low-cost, deployable, AI-integrated platform** for mon
 
 ## 📁 Folder Structure
 
-root/ │ ├── hardware_design/ # 3D models, schematics, wiring ├── firmware/ # Arduino + sampling controller code ├── server/ # MQTT broker + data server code ├── frontend/ # Web dashboard (React / Vue) ├── mobile_app/ # Mobile interface ├── ml_model/ # Preprocessing, training scripts, model export └── docs/ # Report, diagrams, references
+root/ 
+├── hardware_design/ # 3D models, schematics, wiring 
+├── firmware/ # Arduino + sampling controller code 
+├── server/ # MQTT broker + data server code 
+├── frontend/ # Web dashboard (React / Vue) 
+├── mobile_app/ # Mobile interface 
+├── ml_model/ # Preprocessing, training scripts, model export 
+└── docs/ # Report, diagrams, references
 
 
 ---
@@ -100,7 +107,7 @@ root/ │ ├── hardware_design/ # 3D models, schematics, wiring ├── f
 Feel free to reach out for feedback, collaboration, or technical questions.
 
 📧 student lead zhuohang2024@163.com  
-🧑‍🏫 Supervisor: [Akin], [Valerio], [UCL]
+🧑‍🏫 Supervisor: [Akin], [Valerio]
 
 ---
 
