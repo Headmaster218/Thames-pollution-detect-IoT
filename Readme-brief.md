@@ -14,6 +14,12 @@ We have built a **fully integrated system** including real-time data collection,
 - **Autonomous sampling unit** that collects water samples at scheduled intervals for future lab testing  
 - **Preliminary model** trained on public data (log-scale RMSE ≈ 0.83)
 
+
+## 🎥 Video preview
+
+[![Press Here~](./Reports/AquaSense.png)](./Reports/AquaSense.mp4)
+
+
 ---
 
 ## 📦 System Components
