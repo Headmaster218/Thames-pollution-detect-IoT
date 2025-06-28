@@ -50,3 +50,7 @@ We have built a **fully integrated system** including real-time data collection,
 - 🛠️ Autonomous sampler hardware under construction (expected to complete soon)
 
 ---
+
+## Author
+Zhuohang Wu 
+zhuohang2024@163.com

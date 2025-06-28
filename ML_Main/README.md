@@ -1,10 +1,11 @@
-# Thames Pollution Detection IoT - ML Model
+# AquaSense - ML Model
 
 ## Author
-John Wu, Tommy Xin, Flex Fan
+Zhuohang Wu @
+zhuohang2024@163.com
 
 ## Project Overview
-This project aims to detect pollution levels in the Thames River using IoT devices and machine learning models with inorganic sensors. The data is collected from various stations along the river and processed to identify pollution indicators such as Coliform and E.coli.
+This project aims to detect pollution levels in the River using IoT devices and machine learning models with inorganic sensors. The data is collected from various stations along the river and processed to identify pollution indicators such as Coliform and E.coli.
 
 ## File Descriptions
 ### Data Processing

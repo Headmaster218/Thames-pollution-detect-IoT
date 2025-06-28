@@ -1,5 +1,7 @@
 # Intelligent Waterborne Fecal Contamination Monitoring System
 
+## AquaSense
+
 This project presents a **low-cost, deployable, AI-integrated platform** for monitoring fecal contamination in natural waters. By using **inorganic water quality parameters** (e.g., DO, PH, turbidity, conductivity) as surrogate inputs, the system predicts **E. coli concentration** and collects physical water samples for future validation. It integrates **real-time sensing, wireless transmission, machine learning inference, data visualization, and automated water sampling**, forming a complete perception–prediction–collection loop.
 
 ---
@@ -103,7 +105,10 @@ Root/
     ├── APP/          # Mobile app interface "BlueGuardian"
     └── Web/          # Web dashboard 
 ```
-
+---
+## Author
+Zhuohang Wu @
+zhuohang2024@163.com
 
 ---
 
