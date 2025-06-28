@@ -22,6 +22,4 @@ ML_Main/2.3rearranged_columns_Full.csv
 
 ML_Main/2.3rearranged_columns_Full_New.csv
 
-*.pth
-
-*.pkl
+ML_Main/xgboost_model.json

@@ -8,7 +8,7 @@ import joblib
 import matplotlib.pyplot as plt
 
 # Load dataset
-data = pd.read_csv('2.7sin_cos_transformed - Copy.csv')  # Skip the first row (header)
+data = pd.read_csv('2.9sin_cos_with_new_features.csv')  # Skip the first row (header)
 feature_names = data.columns[[i for i in range(3, 48) if i != 8]]  # Use columns 4 to 48 excluding column 9 as feature names
 
 # Prepare input and output data

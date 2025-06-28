@@ -7,10 +7,10 @@ def query_llm(content):
             "http://localhost:1234/v1/chat/completions",
             headers={"Content-Type": "application/json"},
             json={
-                "model": "qwen2.5-14b-instruct",
+                "model": "qwen2.5-27b-instruct",
                 "messages": [
                     {"role": "system", "content": "Always answer in Yes or No, Give right answer as possible."},
-                    {"role": "user", "content": f'Answer in Yes or No: "{content}" 是否是下列参数其中之一的测量结果：PH，浊度，电导率，大肠杆菌，溶解氧，温度？Answer in Yes or No'}
+                    {"role": "user", "content": f'Answer in Yes or No: "{content}" 是否是下列参数其中之一的文字上相关的测量结果：PH，浊度，电导率，大肠杆菌，溶解氧，温度？Answer in Yes or No'}
                 ],
                 "temperature": 0.7,
                 "max_tokens": -1,
@@ -37,6 +37,6 @@ def filter_csv(input_filepath, output_filepath):
                 writer.writerow(row)
 
 if __name__ == "__main__":
-    input_filepath = "D:/Programing/Code/Thames-pollution-detect-IoT/MLModel/211extracted_columns.csv"
-    output_filepath = "D:/Programing/Code/Thames-pollution-detect-IoT/MLModel/filtered_columns.csv"
+    input_filepath = "./extracted_columns.csv"
+    output_filepath = "./filtered_columns.csv"
     filter_csv(input_filepath, output_filepath)

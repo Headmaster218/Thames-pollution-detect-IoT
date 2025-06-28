@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 import joblib
 
 # Load dataset
-data = pd.read_csv('2.7sin_cos_transformed - Copy.csv', skiprows=1)  # Skip the first row (header)
+data = pd.read_csv('2.9sin_cos_with_new_features.csv', skiprows=1)  # Skip the first row (header)
 
 # Prepare input and output data
 X = data.iloc[:, [i for i in range(3, 48) if i != 8]].values  # Columns 4, 5, 6, 7, 8, 10, 11 as input
@@ -39,7 +39,7 @@ y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
 train_dataset = TensorDataset(X_train, y_train)
 test_dataset = TensorDataset(X_test, y_test)
 
-batch_size = 64  # 设置batch size
+batch_size = 32  # 设置batch size
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
@@ -47,24 +47,18 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 class NeuralNetwork(nn.Module):
     def __init__(self):
         super(NeuralNetwork, self).__init__()
-        self.fc1 = nn.Linear(44, 64)  # Adjust input size to 7
+        self.fc1 = nn.Linear(44, 128)  # Adjust input size
         self.dropout1 = nn.Dropout(0.25)
-        self.fc2 = nn.Linear(64, 128)
+        self.fc2 = nn.Linear(128, 64) 
         self.dropout2 = nn.Dropout(0.25)
-        self.fc3 = nn.Linear(128, 128)
+        self.fc3 = nn.Linear(64, 32) 
         self.dropout3 = nn.Dropout(0.25)
-        self.fc4 = nn.Linear(128, 64) 
-        self.dropout4 = nn.Dropout(0.25)
-        self.fc5 = nn.Linear(64, 32) 
-        self.dropout5 = nn.Dropout(0.25)
-        self.fc6 = nn.Linear(32, 1) 
+        self.fc4 = nn.Linear(32, 1) 
     def forward(self, x):
-        x = torch.nn.functional.leaky_relu(self.fc1(x))
-        x = torch.nn.functional.leaky_relu(self.fc2(x))
-        x = torch.nn.functional.leaky_relu(self.fc3(x))
-        x = torch.nn.functional.leaky_relu(self.fc4(x))
-        x = torch.nn.functional.leaky_relu(self.fc5(x))
-        x = self.fc6(x)
+        x = torch.nn.functional.leaky_relu(self.fc1(x), negative_slope=0.01)
+        x = torch.nn.functional.leaky_relu(self.fc2(x), negative_slope=0.01)
+        x = torch.nn.functional.leaky_relu(self.fc3(x), negative_slope=0.01)
+        x = self.fc4(x)
         return x
 
 model = NeuralNetwork()
@@ -74,12 +68,14 @@ criterion = nn.HuberLoss()
 # L2: weight_decay
 optimizer = optim.Adam(model.parameters(), weight_decay=0.0001, lr=0.0001)
 
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=400, gamma=0.8)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.9)
 
 # Train the model
-num_epochs = 800
+num_epochs = 700
 train_losses = []
 val_losses = []
+
+best_val_loss = float('inf')  # 初始化最小验证损失
 
 for epoch in range(num_epochs):
     model.train()
@@ -102,15 +98,18 @@ for epoch in range(num_epochs):
             epoch_val_loss += val_loss.item()
     val_losses.append(epoch_val_loss / len(test_loader))
     
+    # 检查是否是当前最小验证损失
+    if val_losses[-1] < best_val_loss:
+        best_val_loss = val_losses[-1]
+        torch.save(model.state_dict(), f'model_best_val_loss.pth')
+        print(f'{best_val_loss:.4f}@{epoch}_epoch')
+    
     # Step the scheduler
     scheduler.step()
     
     if (epoch+1) % 10 == 0:
         print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_losses[-1]:.4f}, Val Loss: {val_losses[-1]:.4f}')
     
-    # Save model parameters every 200 epochs
-    if (epoch+1) % 200 == 0:
-        torch.save(model.state_dict(), f'model_epoch_{epoch+1}.pth')
 
 # Plot the loss
 plt.plot(train_losses, label='train_loss')

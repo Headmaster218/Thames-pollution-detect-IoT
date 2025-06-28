@@ -25,4 +25,4 @@ for col in columns_to_process:
     df[f'{col} n/(n+1)'] = df[col] / (df[col] + 1)
 
 # 保存处理后的数据
-df.to_csv('2.7sin_cos_transformed - Copy.csv', index=False)
+df.to_csv('2.9sin_cos_with_new_features.csv', index=False)
