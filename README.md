@@ -112,12 +112,20 @@ zhuohang2024@163.com
 
 ---
 
-## 📬 Contact & Feedback
+## 📬 Contact & Acknowledgements
 
-Feel free to reach out for feedback, collaboration, or technical questions.
+For technical inquiries, collaboration requests, or feedback, feel free to contact:
 
-📧 student lead zhuohang2024@163.com  
-🧑‍🏫 Supervisor: [Akin], [Valerio]
+**📌 Project Lead:**  
+Zhuohang Wu (John) – zhuohang2024@163.com
+
+**👥 Team Members:**  
+Chenghao Xin, Xueyin Fan
+
+**🧑‍🏫 Supervisors:**  
+- Dr. Akin Delibasi – Department of Computer Science, UCL  
+- Dr. Valerio Modugno – Department of Computer Science, UCL  
+- Dr. Izzy Bishop – Department of Genetics, Evolution & Environment, UCL
 
 ---
 
