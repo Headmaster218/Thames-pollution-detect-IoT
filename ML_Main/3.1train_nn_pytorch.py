@@ -8,6 +8,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler
 import joblib
+from sklearn.metrics import r2_score  # 导入 r2_score
 
 # Load dataset
 data = pd.read_csv('2.9sin_cos_with_new_features.csv', skiprows=1)  # Skip the first row (header)
@@ -68,18 +69,22 @@ criterion = nn.HuberLoss()
 # L2: weight_decay
 optimizer = optim.Adam(model.parameters(), weight_decay=0.0001, lr=0.0001)
 
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.9)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.93)
 
 # Train the model
-num_epochs = 700
+num_epochs = 300
 train_losses = []
 val_losses = []
+train_r2_scores = []  # 保存训练集 R²
+val_r2_scores = []    # 保存验证集 R²
 
 best_val_loss = float('inf')  # 初始化最小验证损失
 
 for epoch in range(num_epochs):
     model.train()
     epoch_train_loss = 0
+    train_preds = []  # 保存训练集预测值
+    train_targets = []  # 保存训练集真实值
     for X_batch, y_batch in train_loader:
         optimizer.zero_grad()
         outputs = model(X_batch)
@@ -87,19 +92,27 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         epoch_train_loss += loss.item()
+        train_preds.extend(outputs.detach().numpy())
+        train_targets.extend(y_batch.numpy())
     train_losses.append(epoch_train_loss / len(train_loader))
+    train_r2_scores.append(r2_score(train_targets, train_preds))  # 计算训练集 R²
     
     model.eval()
     epoch_val_loss = 0
+    val_preds = []  # 保存验证集预测值
+    val_targets = []  # 保存验证集真实值
     with torch.no_grad():
         for X_batch, y_batch in test_loader:
             val_outputs = model(X_batch)
             val_loss = criterion(val_outputs, y_batch)
             epoch_val_loss += val_loss.item()
+            val_preds.extend(val_outputs.numpy())
+            val_targets.extend(y_batch.numpy())
     val_losses.append(epoch_val_loss / len(test_loader))
+    val_r2_scores.append(r2_score(val_targets, val_preds))  # 计算验证集 R²
     
     # 检查是否是当前最小验证损失
-    if val_losses[-1] < best_val_loss:
+    if val_losses[-1] < best_val_loss and val_losses[-1] <1:
         best_val_loss = val_losses[-1]
         torch.save(model.state_dict(), f'model_best_val_loss.pth')
         print(f'{best_val_loss:.4f}@{epoch}_epoch')
@@ -108,15 +121,25 @@ for epoch in range(num_epochs):
     scheduler.step()
     
     if (epoch+1) % 10 == 0:
-        print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_losses[-1]:.4f}, Val Loss: {val_losses[-1]:.4f}')
-    
+        print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_losses[-1]:.4f}, Val Loss: {val_losses[-1]:.4f}, Train R²: {train_r2_scores[-1]:.4f}, Val R²: {val_r2_scores[-1]:.4f}')
 
-# Plot the loss
+# Plot the loss and R²
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
 plt.plot(train_losses, label='train_loss')
 plt.plot(val_losses, label='val_loss')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(train_r2_scores, label='train_r2')
+plt.plot(val_r2_scores, label='val_r2')
+plt.xlabel('Epochs')
+plt.ylabel('R² Score')
+plt.legend()
+
+plt.tight_layout()
 plt.show()
 
 # Evaluate the model
