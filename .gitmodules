@@ -1,0 +1,3 @@
+[submodule "Visualization/APP"]
+	path = Visualization/APP
+	url = https://github.com/Headmaster218/BlueGuardian.git
