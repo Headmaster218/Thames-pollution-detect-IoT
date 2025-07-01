@@ -16,8 +16,6 @@ This project presents a **low-cost, deployable, AI-integrated platform** for mon
 - **Title:** Integrated AI-driven Monitoring and Sampling System for Fecal Contamination in Urban Waters  
 - **Core Idea:** Replace expensive, time-delayed E. coli testing methods with an inorganic-indicator-based prediction model
 - **Application Scenario:** Urban rivers (e.g., Thames), lakes, and distributed low-resource field sites  
-- **Lead Developer:** [Your Name] (system architect, embedded design, ML modeling)  
-- **Collaborators:** [Names or initials if applicable]
 
 ---
 
