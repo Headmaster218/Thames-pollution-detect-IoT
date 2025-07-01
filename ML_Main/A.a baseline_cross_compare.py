@@ -24,9 +24,9 @@ from tensorflow.keras.losses import Huber
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 
 ###############################################################################
-# 0. 读取数据
+# 0. Load data
 ###############################################################################
-DATA_PATH = Path("./2.6useful_data_New.csv")   # 改成你的真实路径
+DATA_PATH = Path("./2.6useful_data_New.csv") 
 df = pd.read_csv(DATA_PATH)
 
 FEATURE_COLS = ['Oxygen Diss', 'Temp Water', 'pH', 'ln Turd', 'ln Cond']
@@ -40,7 +40,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.20, random_state=42)
 
 ###############################################################################
-# 1. 评估函数
+# 1. define evaluation function
 ###############################################################################
 def evaluate(model_name, y_true, y_pred, results):
     mse = mean_squared_error(y_true, y_pred)
@@ -55,7 +55,7 @@ def evaluate(model_name, y_true, y_pred, results):
     })
 
 ###############################################################################
-# 2. Turbidity-only 一元线性回归
+# 2. Turbidity-only baseline
 ###############################################################################
 results = []
 X_turb  = X[['ln Turd']].values.reshape(-1, 1)
@@ -73,7 +73,7 @@ scaler = StandardScaler()
 numeric_preproc = ColumnTransformer(
     [("scaler", scaler, FEATURE_COLS)], remainder="drop")
 
-# 3.1 全特征线性回归
+# 3.1 Linear Regression
 lr_pipe = Pipeline([
     ("prep", numeric_preproc),
     ("reg",  LinearRegression())
@@ -97,7 +97,7 @@ xgb = XGBRegressor(
 xgb.fit(X_train, y_train)
 evaluate("XGBoost", y_test, xgb.predict(X_test), results)
 
-# 3.4 MLP 两层
+# 3.4 MLP  two layers
 mlp_pipe = Pipeline([
     ("prep", numeric_preproc),
     ("mlp",  MLPRegressor(hidden_layer_sizes=(128, 64),
@@ -110,7 +110,7 @@ mlp_pipe = Pipeline([
 evaluate("MLP-2L", y_test, mlp_pipe.predict(X_test), results)
 
 ###############################################################################
-# 5. 保存结果
+# 5. Save results
 ###############################################################################
 results_df = pd.DataFrame(results)
 results_df.sort_values("RMSE", inplace=True)

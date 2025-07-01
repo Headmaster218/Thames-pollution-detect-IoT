@@ -8,14 +8,14 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler
 import joblib
-from sklearn.metrics import r2_score  # 导入 r2_score
+from sklearn.metrics import r2_score  # Import r2_score
 
 # Load dataset
 data = pd.read_csv('2.9sin_cos_with_new_features.csv', skiprows=1)  # Skip the first row (header)
 
 # Prepare input and output data
-X = data.iloc[:, [i for i in range(3, 48) if i != 8]].values  # Columns 4, 5, 6, 7, 8, 10, 11 as input
-y = data.iloc[:, 8].values    # Column 9 as output
+X = data.iloc[:, [i for i in range(3, 48) if i != 8]].values  # Select columns 4-48 excluding column 8 as input
+y = data.iloc[:, 8].values    # Select column 9 as output
 
 # Normalize input data
 scaler = StandardScaler()
@@ -40,7 +40,7 @@ y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
 train_dataset = TensorDataset(X_train, y_train)
 test_dataset = TensorDataset(X_test, y_test)
 
-batch_size = 32  # 设置batch size
+batch_size = 32  # Set batch size
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
@@ -66,7 +66,7 @@ model = NeuralNetwork()
 
 # Define loss function and optimizer
 criterion = nn.HuberLoss()
-# L2: weight_decay
+# L2 regularization: weight_decay
 optimizer = optim.Adam(model.parameters(), weight_decay=0.0001, lr=0.0001)
 
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.93)
@@ -75,16 +75,16 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.93)
 num_epochs = 300
 train_losses = []
 val_losses = []
-train_r2_scores = []  # 保存训练集 R²
-val_r2_scores = []    # 保存验证集 R²
+train_r2_scores = []  # Save training R² scores
+val_r2_scores = []    # Save validation R² scores
 
-best_val_loss = float('inf')  # 初始化最小验证损失
+best_val_loss = float('inf')  # Initialize best validation loss
 
 for epoch in range(num_epochs):
     model.train()
     epoch_train_loss = 0
-    train_preds = []  # 保存训练集预测值
-    train_targets = []  # 保存训练集真实值
+    train_preds = []  # Save training predictions
+    train_targets = []  # Save training targets
     for X_batch, y_batch in train_loader:
         optimizer.zero_grad()
         outputs = model(X_batch)
@@ -95,12 +95,12 @@ for epoch in range(num_epochs):
         train_preds.extend(outputs.detach().numpy())
         train_targets.extend(y_batch.numpy())
     train_losses.append(epoch_train_loss / len(train_loader))
-    train_r2_scores.append(r2_score(train_targets, train_preds))  # 计算训练集 R²
+    train_r2_scores.append(r2_score(train_targets, train_preds))  # Calculate training R²
     
     model.eval()
     epoch_val_loss = 0
-    val_preds = []  # 保存验证集预测值
-    val_targets = []  # 保存验证集真实值
+    val_preds = []  # Save validation predictions
+    val_targets = []  # Save validation targets
     with torch.no_grad():
         for X_batch, y_batch in test_loader:
             val_outputs = model(X_batch)
@@ -109,10 +109,10 @@ for epoch in range(num_epochs):
             val_preds.extend(val_outputs.numpy())
             val_targets.extend(y_batch.numpy())
     val_losses.append(epoch_val_loss / len(test_loader))
-    val_r2_scores.append(r2_score(val_targets, val_preds))  # 计算验证集 R²
+    val_r2_scores.append(r2_score(val_targets, val_preds))  # Calculate validation R²
     
-    # 检查是否是当前最小验证损失
-    if val_losses[-1] < best_val_loss and val_losses[-1] <1:
+    # Check if current validation loss is the best
+    if val_losses[-1] < best_val_loss and val_losses[-1] < 1:
         best_val_loss = val_losses[-1]
         torch.save(model.state_dict(), f'model_best_val_loss.pth')
         print(f'{best_val_loss:.4f}@{epoch}_epoch')
